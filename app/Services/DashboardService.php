@@ -14,6 +14,8 @@ class DashboardService
     {
         return [
             'total_users' => $this->dashboardRepository->getTotalUsers(),
+            'active_sellers' => $this->dashboardRepository->getActiveSellers(),
+            'pending_sellers' => $this->dashboardRepository->getPendingSellers(),
             'total_products' => $this->dashboardRepository->getTotalProducts(),
             'total_orders' => $this->dashboardRepository->getTotalOrders(),
             'total_revenue' => $this->dashboardRepository->getTotalRevenue(),

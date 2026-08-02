@@ -14,7 +14,7 @@ use Stripe\Exception\SignatureVerificationException;
 class PaymentController extends Controller
 {
     public function __construct(
-        private readonly StripeService $stripeService
+        private StripeService $stripeService
     ) {}
 
     /**

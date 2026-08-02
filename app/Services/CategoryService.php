@@ -6,10 +6,13 @@ use App\Models\Category;
 use App\Repositories\CategoryRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class CategoryService
 {
+    protected const CACHE_KEY_ACTIVE = 'categories.active';
+
     public function __construct(
         protected CategoryRepository $categoryRepository
     ) {}
@@ -17,7 +20,9 @@ class CategoryService
     public function getAll(int $perPage = 15, bool $activeOnly = false): LengthAwarePaginator|Collection
     {
         if ($activeOnly) {
-            return $this->categoryRepository->getActiveCategories();
+            return Cache::remember(self::CACHE_KEY_ACTIVE, now()->addHour(), function () {
+                return $this->categoryRepository->getActiveCategories();
+            });
         }
 
         return $this->categoryRepository->paginate($perPage);
@@ -37,7 +42,10 @@ class CategoryService
     {
         $data['slug'] = Str::slug($data['name']);
 
-        return $this->categoryRepository->create($data);
+        $category = $this->categoryRepository->create($data);
+        Cache::forget(self::CACHE_KEY_ACTIVE);
+
+        return $category;
     }
 
     public function update(int $id, array $data): Category
@@ -48,13 +56,19 @@ class CategoryService
             $data['slug'] = Str::slug($data['name']);
         }
 
-        return $this->categoryRepository->update($id, $data);
+        $category = $this->categoryRepository->update($id, $data);
+        Cache::forget(self::CACHE_KEY_ACTIVE);
+
+        return $category;
     }
 
     public function delete(int $id): bool
     {
         $this->categoryRepository->findByIdOrFail($id);
 
-        return $this->categoryRepository->delete($id);
+        $deleted = $this->categoryRepository->delete($id);
+        Cache::forget(self::CACHE_KEY_ACTIVE);
+
+        return $deleted;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Repositories\UserRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class UserService
 {
@@ -12,9 +13,14 @@ class UserService
         protected UserRepository $userRepository
     ) {}
 
-    public function getAll(int $perPage = 15): LengthAwarePaginator
+    public function getAll(?string $search = null, ?string $role = null, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->userRepository->paginate($perPage);
+        return $this->userRepository->getAllFiltered($search, $role, $perPage);
+    }
+
+    public function getPendingSellers(): Collection
+    {
+        return $this->userRepository->getPendingSellers();
     }
 
     public function getById(int $id): User
@@ -50,5 +56,15 @@ class UserService
     public function toggleActive(int $id): User
     {
         return $this->userRepository->toggleActive($id);
+    }
+
+    public function approveSeller(int $id): User
+    {
+        return $this->userRepository->approveSeller($id);
+    }
+
+    public function rejectSeller(int $id): User
+    {
+        return $this->userRepository->rejectSeller($id);
     }
 }

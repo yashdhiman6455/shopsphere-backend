@@ -44,6 +44,22 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
+        $seller = User::create([
+            'name' => 'Sarah Seller',
+            'email' => 'seller@shopsphere.com',
+            'password' => Hash::make('password'),
+            'role' => 'seller',
+            'store_name' => 'TechNest Store',
+            'seller_approved_at' => now(),
+            'phone' => '5551112222',
+            'address' => '789 Market Road',
+            'city' => 'Chicago',
+            'state' => 'IL',
+            'zip_code' => '60601',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+
         $categories = [
             ['name' => 'Electronics', 'slug' => 'electronics', 'description' => 'Gadgets and electronic devices'],
             ['name' => 'Clothing', 'slug' => 'clothing', 'description' => 'Fashion and apparel'],
@@ -173,6 +189,49 @@ class DatabaseSeeder extends Seeder
 
         $createdProducts = collect($products)->map(fn ($prod) => Product::create($prod));
 
+        $sellerProducts = [
+            [
+                'seller_id' => $seller->id,
+                'category_id' => $createdCategories[0]->id,
+                'name' => 'Bluetooth Speaker Mini',
+                'slug' => 'bluetooth-speaker-mini',
+                'price' => 59.99,
+                'sale_price' => 44.99,
+                'quantity' => 120,
+                'description' => 'Compact portable bluetooth speaker with 12-hour battery life',
+                'image' => 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=600&h=400&fit=crop',
+                'is_active' => true,
+                'is_featured' => false,
+            ],
+            [
+                'seller_id' => $seller->id,
+                'category_id' => $createdCategories[0]->id,
+                'name' => 'Mechanical Keyboard RGB',
+                'slug' => 'mechanical-keyboard-rgb',
+                'price' => 99.99,
+                'quantity' => 75,
+                'description' => 'RGB backlit mechanical keyboard with hot-swappable switches',
+                'image' => 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&h=400&fit=crop',
+                'is_active' => true,
+                'is_featured' => true,
+            ],
+            [
+                'seller_id' => $seller->id,
+                'category_id' => $createdCategories[1]->id,
+                'name' => 'Puffer Jacket Unisex',
+                'slug' => 'puffer-jacket-unisex',
+                'price' => 74.99,
+                'sale_price' => 59.99,
+                'quantity' => 90,
+                'description' => 'Warm quilted puffer jacket for all seasons',
+                'image' => 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=400&fit=crop',
+                'is_active' => true,
+                'is_featured' => false,
+            ],
+        ];
+
+        $createdSellerProducts = collect($sellerProducts)->map(fn ($prod) => Product::create($prod));
+
         Coupon::create([
             'code' => 'WELCOME10',
             'type' => 'percentage',
@@ -223,6 +282,14 @@ class DatabaseSeeder extends Seeder
             'quantity' => 1,
             'price' => 1099.99,
             'total' => 1099.99,
+        ]);
+
+        OrderItem::create([
+            'order_id' => $order->id,
+            'product_id' => $createdSellerProducts[0]->id,
+            'quantity' => 2,
+            'price' => 44.99,
+            'total' => 89.98,
         ]);
     }
 }

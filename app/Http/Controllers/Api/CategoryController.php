@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class CategoryController extends Controller
 {
     public function __construct(
-        private readonly CategoryService $categoryService
+        private CategoryService $categoryService
     ) {}
 
     public function index(Request $request): JsonResponse|AnonymousResourceCollection

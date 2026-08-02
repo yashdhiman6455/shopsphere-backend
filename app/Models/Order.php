@@ -44,6 +44,7 @@ class Order extends Model
             'shipping_cost' => 'decimal:2',
             'tax' => 'decimal:2',
             'total' => 'decimal:2',
+            'refunded_at' => 'datetime',
         ];
     }
 
@@ -60,6 +61,11 @@ class Order extends Model
     public function coupon(): BelongsTo
     {
         return $this->belongsTo(Coupon::class);
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 
     public static function generateOrderNumber(): string

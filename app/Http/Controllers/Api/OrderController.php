@@ -14,7 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class OrderController extends Controller
 {
     public function __construct(
-        private readonly OrderService $orderService
+        private OrderService $orderService
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -25,9 +25,16 @@ class OrderController extends Controller
         return OrderResource::collection($orders);
     }
 
-    public function show($id): JsonResponse
+    public function show(Request $request, $id): JsonResponse
     {
         $order = $this->orderService->getOrderById($id);
+
+        if ($order->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. You can only view your own orders.',
+            ], 403);
+        }
 
         return response()->json([
             'success' => true,

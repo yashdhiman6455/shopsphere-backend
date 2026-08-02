@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\User;
+use App\Events\OrderPlaced;
 use App\Mail\InvoiceMail;
 use App\Mail\OrderConfirmationMail;
 use App\Repositories\CartRepository;
@@ -56,10 +57,6 @@ class OrderService
                     'price' => $effectivePrice,
                     'total' => $itemTotal,
                 ];
-
-                $this->productRepository->update($product->id, [
-                    'quantity' => $product->quantity - $cartItem->quantity,
-                ]);
             }
 
             $discount = 0;
@@ -116,6 +113,8 @@ class OrderService
                 \Log::error('Failed to send order emails: ' . $e->getMessage());
             }
 
+            OrderPlaced::dispatch($order);
+
             return $order;
         });
     }
@@ -145,5 +144,45 @@ class OrderService
     public function getOrderStats(): array
     {
         return $this->orderRepository->getOrderStats();
+    }
+
+    public function getOrdersForSeller(int $sellerId, ?string $status = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->orderRepository->getOrdersForSeller($sellerId, $status, $perPage);
+    }
+
+    public function getSellerOrderStatusCounts(int $sellerId): array
+    {
+        return $this->orderRepository->getOrdersForSellerByStatusCount($sellerId);
+    }
+
+    public function updateSellerOrderStatus(int $sellerId, int $orderId, string $status): Order
+    {
+        $order = $this->orderRepository->findByIdOrFail($orderId);
+
+        $hasSellerProduct = $order->items()
+            ->whereHas('product', fn ($q) => $q->where('seller_id', $sellerId))
+            ->exists();
+
+        if (!$hasSellerProduct) {
+            throw new \Exception('This order does not contain any of your products.');
+        }
+
+        return $this->orderRepository->updateStatus($orderId, $status);
+    }
+
+    public function getSellerRevenue(int $sellerId): float
+    {
+        return $this->orderRepository->getSellerRevenue($sellerId);
+    }
+
+    public function getSellerSalesByDate(int $sellerId, int $days = 30): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->orderRepository->getSellerSalesByDate($sellerId, $days);
+    }
+
+    public function getSellerTopProducts(int $sellerId, int $limit = 5): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->orderRepository->getSellerTopProducts($sellerId, $limit);
     }
 }

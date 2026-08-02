@@ -12,7 +12,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class CouponController extends Controller
 {
     public function __construct(
-        private readonly CouponService $couponService
+        private CouponService $couponService
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection

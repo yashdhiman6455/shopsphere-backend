@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
@@ -12,6 +13,7 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
+        'seller_id',
         'category_id',
         'name',
         'slug',
@@ -40,6 +42,16 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'seller_id');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('is_primary', 'desc')->orderBy('id');
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -50,9 +62,9 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
-    public function cartItems(): HasMany
+    public function wishlistedBy(): BelongsToMany
     {
-        return $this->hasMany(CartItem::class);
+        return $this->belongsToMany(User::class, 'wishlists')->withTimestamps();
     }
 
     public function getEffectivePrice(): float

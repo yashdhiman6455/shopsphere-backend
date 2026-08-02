@@ -14,13 +14,18 @@ class AuthService
 
     public function register(array $data): array
     {
+        $role = $data['role'] ?? 'customer';
+        $isSeller = $role === 'seller';
+
         $user = $this->userRepository->create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
-            'role' => 'customer',
+            'role' => $role,
+            'store_name' => $isSeller ? ($data['store_name'] ?? $data['name']) : null,
+            'seller_approved_at' => null,
             'is_active' => true,
-            'email_verified_at' => now(),
+            'email_verified_at' => null,
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;

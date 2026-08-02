@@ -6,12 +6,26 @@ use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ProductRepository extends BaseRepository
 {
     protected function model(): string
     {
         return Product::class;
+    }
+
+    public function findByIdOrFail(int $id, array $columns = ['*']): Product
+    {
+        $product = $this->getBuilder()
+            ->with(['category', 'images'])
+            ->find($id, $columns);
+
+        if (!$product) {
+            throw new ModelNotFoundException("Product not found with ID: {$id}");
+        }
+
+        return $product;
     }
 
     public function getActiveProducts(): Collection
@@ -163,5 +177,54 @@ class ProductRepository extends BaseRepository
         }
 
         return $query->exists();
+    }
+
+    public function getBySeller(int $sellerId, ?string $search = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->getBuilder()
+            ->where('seller_id', $sellerId)
+            ->when($search, function (Builder $query) use ($search) {
+                $query->where(function (Builder $q) use ($search) {
+                    $q->where('name', 'LIKE', "%{$search}%")
+                        ->orWhere('slug', 'LIKE', "%{$search}%");
+                });
+            })
+            ->with('category')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    public function getBySellerAndIdOrFail(int $sellerId, int $productId): Product
+    {
+        $product = $this->getBuilder()
+            ->where('seller_id', $sellerId)
+            ->with(['images', 'category'])
+            ->find($productId);
+
+        if (!$product) {
+            throw new ModelNotFoundException("Product not found for this seller.");
+        }
+
+        return $product;
+    }
+
+    public function countForSeller(int $sellerId): int
+    {
+        return $this->count(['seller_id' => $sellerId]);
+    }
+
+    public function countActiveForSeller(int $sellerId): int
+    {
+        return $this->getBuilder()->where('seller_id', $sellerId)->where('is_active', true)->count();
+    }
+
+    public function getLowStockForSeller(int $sellerId, int $threshold = 10): Collection
+    {
+        return $this->getBuilder()
+            ->where('seller_id', $sellerId)
+            ->where('is_active', true)
+            ->where('quantity', '<=', $threshold)
+            ->orderBy('quantity', 'asc')
+            ->get();
     }
 }

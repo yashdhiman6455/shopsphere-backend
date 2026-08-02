@@ -5,10 +5,13 @@ namespace App\Services;
 use App\Models\Product;
 use App\Repositories\ProductRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class ProductService
 {
+    protected const CACHE_KEY_FEATURED = 'products.featured';
+
     public function __construct(
         protected ProductRepository $productRepository
     ) {}
@@ -44,7 +47,10 @@ class ProductService
     {
         $data['slug'] = Str::slug($data['name']);
 
-        return $this->productRepository->create($data);
+        $product = $this->productRepository->create($data);
+        Cache::forget(self::CACHE_KEY_FEATURED);
+
+        return $product;
     }
 
     public function update(int $id, array $data): Product
@@ -55,18 +61,26 @@ class ProductService
             $data['slug'] = Str::slug($data['name']);
         }
 
-        return $this->productRepository->update($id, $data);
+        $product = $this->productRepository->update($id, $data);
+        Cache::forget(self::CACHE_KEY_FEATURED);
+
+        return $product;
     }
 
     public function delete(int $id): bool
     {
         $this->productRepository->findByIdOrFail($id);
 
-        return $this->productRepository->delete($id);
+        $deleted = $this->productRepository->delete($id);
+        Cache::forget(self::CACHE_KEY_FEATURED);
+
+        return $deleted;
     }
 
     public function getFeatured(): \Illuminate\Database\Eloquent\Collection
     {
-        return $this->productRepository->getFeaturedProducts();
+        return Cache::remember(self::CACHE_KEY_FEATURED, now()->addHour(), function () {
+            return $this->productRepository->getFeaturedProducts();
+        });
     }
 }

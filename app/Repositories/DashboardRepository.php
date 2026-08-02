@@ -17,6 +17,22 @@ class DashboardRepository
         return User::count();
     }
 
+    public function getActiveSellers(): int
+    {
+        return User::where('role', 'seller')
+            ->whereNotNull('seller_approved_at')
+            ->where('is_active', true)
+            ->count();
+    }
+
+    public function getPendingSellers(): int
+    {
+        return User::where('role', 'seller')
+            ->whereNull('seller_approved_at')
+            ->where('is_active', true)
+            ->count();
+    }
+
     public function getTotalProducts(): int
     {
         return Product::count();

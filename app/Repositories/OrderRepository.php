@@ -125,4 +125,80 @@ class OrderRepository extends BaseRepository
 
         return $order->fresh();
     }
+
+    public function getOrdersForSeller(int $sellerId, ?string $status = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->getBuilder()
+            ->whereHas('items.product', fn ($q) => $q->where('seller_id', $sellerId))
+            ->when($status, function (Builder $query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->with([
+                'user',
+                'items' => function ($q) use ($sellerId) {
+                    $q->whereHas('product', fn ($p) => $p->where('seller_id', $sellerId))
+                        ->with(['product' => fn ($p) => $p->where('seller_id', $sellerId)]);
+                },
+            ])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    public function getOrdersForSellerByStatusCount(int $sellerId): array
+    {
+        return $this->getBuilder()
+            ->whereHas('items.product', fn ($q) => $q->where('seller_id', $sellerId))
+            ->selectRaw('status, COUNT(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+    }
+
+    public function getSellerRevenue(int $sellerId): float
+    {
+        return (float) $this->getBuilder()
+            ->where('status', '!=', 'cancelled')
+            ->whereHas('items.product', fn ($q) => $q->where('seller_id', $sellerId))
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('products.seller_id', $sellerId)
+            ->sum('order_items.total');
+    }
+
+    public function getSellerSalesByDate(int $sellerId, int $days = 30): Collection
+    {
+        return $this->getBuilder()
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('products.seller_id', $sellerId)
+            ->where('orders.status', '!=', 'cancelled')
+            ->where('orders.created_at', '>=', now()->subDays($days))
+            ->selectRaw("DATE(orders.created_at) as date, SUM(order_items.total) as total_sales, COUNT(DISTINCT orders.id) as order_count")
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get();
+    }
+
+    public function getSellerTopProducts(int $sellerId, int $limit = 5): Collection
+    {
+        return $this->getBuilder()
+            ->join('order_items', 'orders.id', '=', 'order_items.order_id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('products.seller_id', $sellerId)
+            ->where('orders.status', '!=', 'cancelled')
+            ->select('products.id', 'products.name', 'products.image')
+            ->selectRaw('SUM(order_items.quantity) as total_sold, SUM(order_items.total) as total_revenue')
+            ->groupBy('products.id', 'products.name', 'products.image')
+            ->orderBy('total_sold', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function getSellerLowStockCount(int $sellerId, int $threshold = 10): int
+    {
+        return \App\Models\Product::where('seller_id', $sellerId)
+            ->where('is_active', true)
+            ->where('quantity', '<=', $threshold)
+            ->count();
+    }
 }
