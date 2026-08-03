@@ -58,9 +58,6 @@ class ReviewService
 
     public function getReviewsStats(int $productId): array
     {
-        return [
-            'average_rating' => round($this->reviewRepository->averageRating($productId), 2),
-            'total' => $this->reviewRepository->count(['product_id' => $productId]),
-        ];
+        return $this->reviewRepository->getStats($productId);
     }
 }

@@ -16,7 +16,7 @@ class CartRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('user_id', $userId)
-            ->with('product')
+            ->with(['product' => fn ($q) => $q->withAvg('reviews', 'rating')])
             ->get();
     }
 

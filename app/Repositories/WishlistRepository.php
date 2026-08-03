@@ -16,7 +16,7 @@ class WishlistRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('user_id', $userId)
-            ->with(['product' => fn ($q) => $q->with('category')->with('seller')])
+            ->with(['product' => fn ($q) => $q->with('category')->with('seller')->withAvg('reviews', 'rating')])
             ->orderBy('created_at', 'desc')
             ->get();
     }

@@ -42,4 +42,17 @@ class ReviewRepository extends BaseRepository
     {
         return (float) $this->getBuilder()->where('product_id', $productId)->avg('rating') ?? 0;
     }
+
+    public function getStats(int $productId): array
+    {
+        $row = $this->getBuilder()
+            ->where('product_id', $productId)
+            ->selectRaw('AVG(rating) as average_rating, COUNT(*) as total')
+            ->first();
+
+        return [
+            'average_rating' => round((float) ($row->average_rating ?? 0), 2),
+            'total' => (int) ($row->total ?? 0),
+        ];
+    }
 }

@@ -19,6 +19,7 @@ class ProductRepository extends BaseRepository
     {
         $product = $this->getBuilder()
             ->with(['category', 'images'])
+            ->withAvg('reviews', 'rating')
             ->find($id, $columns);
 
         if (!$product) {
@@ -33,6 +34,7 @@ class ProductRepository extends BaseRepository
         return $this->getBuilder()
             ->where('is_active', true)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->get();
     }
 
@@ -41,6 +43,7 @@ class ProductRepository extends BaseRepository
         return $this->getBuilder()
             ->where('is_active', true)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
@@ -51,7 +54,16 @@ class ProductRepository extends BaseRepository
             ->where('is_active', true)
             ->where('is_featured', true)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->get();
+    }
+
+    public function paginateWithAvg(int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->getBuilder()
+            ->withAvg('reviews', 'rating')
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage);
     }
 
     public function getFiltered(
@@ -91,6 +103,7 @@ class ProductRepository extends BaseRepository
                 });
             })
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
@@ -100,6 +113,7 @@ class ProductRepository extends BaseRepository
         return $this->getBuilder()
             ->where('slug', $slug)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->first();
     }
 
@@ -108,6 +122,7 @@ class ProductRepository extends BaseRepository
         return $this->getBuilder()
             ->where('slug', $slug)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->firstOrFail();
     }
 
@@ -119,6 +134,7 @@ class ProductRepository extends BaseRepository
             ->where('id', '!=', $productId)
             ->where('category_id', $product->category_id)
             ->where('is_active', true)
+            ->withAvg('reviews', 'rating')
             ->limit($limit)
             ->get();
     }
@@ -132,6 +148,7 @@ class ProductRepository extends BaseRepository
                     ->orWhere('description', 'LIKE', "%{$term}%");
             })
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->get();
     }
 
@@ -149,6 +166,7 @@ class ProductRepository extends BaseRepository
             ->where('is_active', true)
             ->where('quantity', '>', 0)
             ->with('category')
+            ->withAvg('reviews', 'rating')
             ->get();
     }
 

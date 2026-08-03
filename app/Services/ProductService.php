@@ -30,7 +30,7 @@ class ProductService
             );
         }
 
-        return $this->productRepository->paginate($perPage);
+        return $this->productRepository->paginateWithAvg($perPage);
     }
 
     public function getById(int $id): Product

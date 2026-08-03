@@ -37,7 +37,11 @@ class OrderService
             $orderItems = [];
 
             foreach ($cartItems as $cartItem) {
-                $product = $this->productRepository->findByIdOrFail($cartItem->product_id);
+                $product = $cartItem->product;
+
+                if (!$product) {
+                    throw new \Exception('A product in your cart is no longer available.');
+                }
 
                 if (!$product->is_active) {
                     throw new \Exception("Product \"{$product->name}\" is no longer available.");

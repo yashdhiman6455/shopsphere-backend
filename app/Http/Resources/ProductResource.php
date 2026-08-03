@@ -27,7 +27,9 @@ class ProductResource extends JsonResource
             'is_active' => $this->is_active,
             'is_featured' => $this->is_featured,
             'category' => new CategoryResource($this->whenLoaded('category')),
-            'average_rating' => $this->getAverageRating(),
+            'average_rating' => array_key_exists('reviews_avg_rating', $this->getAttributes())
+                ? round((float) ($this->reviews_avg_rating ?? 0), 2)
+                : $this->getAverageRating(),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

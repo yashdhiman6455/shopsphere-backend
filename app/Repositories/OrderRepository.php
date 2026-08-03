@@ -18,7 +18,7 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('user_id', $userId)
-            ->with(['items.product', 'coupon'])
+            ->with(['items.product' => fn ($q) => $q->withAvg('reviews', 'rating'), 'coupon'])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -27,38 +27,44 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('user_id', $userId)
-            ->with(['items.product', 'coupon'])
+            ->with(['items.product' => fn ($q) => $q->withAvg('reviews', 'rating'), 'coupon'])
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
     }
 
     public function getOrderStats(): array
     {
-        $totalOrders = $this->count();
-        $totalRevenue = (clone $this->getBuilder())->sum('total');
-        $pendingOrders = (clone $this->getBuilder())->where('status', 'pending')->count();
-        $processingOrders = (clone $this->getBuilder())->where('status', 'processing')->count();
-        $shippedOrders = (clone $this->getBuilder())->where('status', 'shipped')->count();
-        $deliveredOrders = (clone $this->getBuilder())->where('status', 'delivered')->count();
-        $cancelledOrders = (clone $this->getBuilder())->where('status', 'cancelled')->count();
-        $averageOrderValue = $totalOrders > 0 ? round($totalRevenue / $totalOrders, 2) : 0;
+        $row = (clone $this->getBuilder())
+            ->selectRaw("
+                COUNT(*) as total_orders,
+                COALESCE(SUM(total), 0) as total_revenue,
+                COALESCE(SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END), 0) as pending_orders,
+                COALESCE(SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END), 0) as processing_orders,
+                COALESCE(SUM(CASE WHEN status = 'shipped' THEN 1 ELSE 0 END), 0) as shipped_orders,
+                COALESCE(SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END), 0) as delivered_orders,
+                COALESCE(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END), 0) as cancelled_orders
+            ")
+            ->first();
+
+        $totalOrders = (int) $row->total_orders;
+        $totalRevenue = (float) $row->total_revenue;
 
         return [
             'total_orders' => $totalOrders,
             'total_revenue' => $totalRevenue,
-            'pending_orders' => $pendingOrders,
-            'processing_orders' => $processingOrders,
-            'shipped_orders' => $shippedOrders,
-            'delivered_orders' => $deliveredOrders,
-            'cancelled_orders' => $cancelledOrders,
-            'average_order_value' => $averageOrderValue,
+            'pending_orders' => (int) $row->pending_orders,
+            'processing_orders' => (int) $row->processing_orders,
+            'shipped_orders' => (int) $row->shipped_orders,
+            'delivered_orders' => (int) $row->delivered_orders,
+            'cancelled_orders' => (int) $row->cancelled_orders,
+            'average_order_value' => $totalOrders > 0 ? round($totalRevenue / $totalOrders, 2) : 0,
         ];
     }
 
     public function getRecentOrders(int $limit = 10): Collection
     {
         return $this->getBuilder()
-            ->with(['user', 'items.product'])
+            ->with(['user', 'items.product' => fn ($q) => $q->withAvg('reviews', 'rating')])
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
@@ -76,7 +82,7 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('order_number', $orderNumber)
-            ->with(['user', 'items.product', 'coupon'])
+            ->with(['user', 'items.product' => fn ($q) => $q->withAvg('reviews', 'rating'), 'coupon'])
             ->first();
     }
 
@@ -84,7 +90,7 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('status', $status)
-            ->with(['user', 'items.product'])
+            ->with(['user', 'items.product' => fn ($q) => $q->withAvg('reviews', 'rating')])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -93,7 +99,7 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->with(['user', 'items.product'])
+            ->with(['user', 'items.product' => fn ($q) => $q->withAvg('reviews', 'rating')])
             ->orderBy('created_at', 'desc')
             ->get();
     }
@@ -102,7 +108,7 @@ class OrderRepository extends BaseRepository
     {
         return $this->getBuilder()
             ->where('payment_status', 'pending')
-            ->with(['user', 'items.product'])
+            ->with(['user', 'items.product' => fn ($q) => $q->withAvg('reviews', 'rating')])
             ->orderBy('created_at', 'desc')
             ->get();
     }
